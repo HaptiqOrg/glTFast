@@ -892,6 +892,22 @@ namespace GLTFast.Export {
                             outputStreams[attrData.stream]
                             );
                         break;
+                    case VertexAttribute.TexCoord0:
+                    case VertexAttribute.TexCoord1:
+                    case VertexAttribute.TexCoord2:
+                    case VertexAttribute.TexCoord3:
+                    case VertexAttribute.TexCoord4:
+                    case VertexAttribute.TexCoord5:
+                    case VertexAttribute.TexCoord6:
+                    case VertexAttribute.TexCoord7:
+                        FlipUVY(
+                            attrData,
+                            (uint)strides[attrData.stream],
+                            vertexCount,
+                            inputStreams[attrData.stream],
+                            outputStreams[attrData.stream]
+                            );
+                        break;
                 }
             }
 
@@ -911,6 +927,26 @@ namespace GLTFast.Export {
                 m_Accessors[attrData.accessorId].bufferView = bufferViewIds[attrData.stream];
             }
         }
+
+
+
+        private void FlipUVY(AttributeData attrData, uint stride, int vertexCount, NativeArray<byte> inputStream, NativeArray<byte> outputStream)
+        {
+            //TODO Turn this into a burst job instead
+            for (int i = 0; i < vertexCount; i++)
+            {
+                // just doing this using bitconverter to avoid unsafe for now
+                float value = 1.0f - BitConverter.ToSingle(inputStream.Slice(attrData.offset + i * (int)stride + 4, 4).ToArray(), 0);
+                var data = BitConverter.GetBytes(value);
+
+                outputStream[attrData.offset + i * (int)stride + 4] = data[0];
+                outputStream[attrData.offset + i * (int)stride + 5] = data[1];
+                outputStream[attrData.offset + i * (int)stride + 6] = data[2];
+                outputStream[attrData.offset + i * (int)stride + 7] = data[3];
+            }
+        }
+
+
 
         int AddAccessor(Accessor accessor) {
             m_Accessors = m_Accessors ?? new List<Accessor>();
