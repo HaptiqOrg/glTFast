@@ -1,5 +1,6 @@
 {
     "name": "glTFast",
+    "rootNamespace": "",
     "references": [
         "glTFastSchema",
         "glTFastFakeSchema",
@@ -58,12 +59,12 @@
         },
         {
             "name": "com.unity.modules.imageconversion",
-            "expression": "",
+            "expression": "1.0.0",
             "define": "UNITY_IMAGECONVERSION"
         },
         {
             "name": "com.unity.modules.unitywebrequesttexture",
-            "expression": "",
+            "expression": "1.0.0",
             "define": "UNITY_WEBREQUEST_TEXTURE"
         },
         {
