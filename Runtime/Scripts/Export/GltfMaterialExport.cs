@@ -1,11 +1,9 @@
-using System;
-using GLTFast.Materials;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace GLTFast.Export
 {
+    using Logging;
     using Schema;
 
     /// <summary>
@@ -14,21 +12,48 @@ namespace GLTFast.Export
     /// </summary>
     public class GltfMaterialExporter : MaterialExportBase
     {
+        const string k_KeywordEmission = "_EMISSION";
+        const string k_KeywordBumpMap = "_BUMPMAP";
+
+        static readonly int k_BumpMap = Shader.PropertyToID("_BumpMap");
         static readonly int k_roughness = Shader.PropertyToID("_Roughness");
         static readonly int k_metallic = Shader.PropertyToID("_Metallic");
-
-        const string k_KeywordEmission = "_EMISSION";
         static readonly int k_EmissionColor = Shader.PropertyToID("_EmissionColor");
         static readonly int k_EmissionMap = Shader.PropertyToID("_EmissionMap");
+        static readonly int k_MetallicGlossMap = Shader.PropertyToID("_MetallicGlossMap");
+        static readonly int k_OcclusionMap = Shader.PropertyToID("_OcclusionMap");
+        static readonly int k_OcclusionStrength = Shader.PropertyToID("_OcclusionStrength");
 
-        private void ExportBaseColor(ref UnityEngine.Material uMaterial, ref Schema.Material material, IGltfWritable gltf)
+        static readonly int k_BaseColorUVSet = Shader.PropertyToID("_MainTexUVChannel");
+        static readonly int k_BumpMapUVSet = Shader.PropertyToID("_BumpMapUVChannel");
+        static readonly int k_MetallicGlossUVSet = Shader.PropertyToID("_MetallicGlossMapUVChannel");
+        static readonly int k_EmissionUVSet = Shader.PropertyToID("_EmissionMapUVChannel");
+        static readonly int k_OcclusionUVSet = Shader.PropertyToID("_OcclusionMapUVChannel");
+
+        public override bool ConvertMaterial(UnityEngine.Material unityMaterial, out Schema.Material gltfMaterial, IGltfWritable gltf, ICodeLogger logger)
         {
-            var mainTex = uMaterial.GetTexture(k_MainTex);
-            if (mainTex != null)
+            var success = true;
+            gltfMaterial = new Schema.Material
             {
-                material.pbrMetallicRoughness.baseColorTexture = ExportTextureInfo(mainTex, gltf);
-                ExportTextureTransformNoFlip(material.pbrMetallicRoughness.baseColorTexture, uMaterial, k_MainTex, gltf);
-            }
+                name = unityMaterial.name,
+                pbrMetallicRoughness = new PbrMetallicRoughness
+                {
+                    metallicFactor = unityMaterial.GetFloat(k_metallic),
+                    roughnessFactor = unityMaterial.GetFloat(k_roughness),
+                    baseColor = unityMaterial.GetColor(k_Color)
+                }
+            };
+
+            SetAlphaModeAndCutoff(unityMaterial, gltfMaterial);
+            gltfMaterial.doubleSided = IsDoubleSided(unityMaterial);
+
+            success &= ExportBaseColor(unityMaterial, gltfMaterial, gltf, logger);
+            success &= ExportEmissive(unityMaterial, gltfMaterial, gltf, logger);
+            success &= ExportNormal(unityMaterial, gltfMaterial, gltf, logger);
+            success &= ExportOcclusionRoughnessMetallic(unityMaterial, gltfMaterial, gltf, logger);
+
+
+            return success;
         }
 
         protected static void ExportTextureTransformNoFlip(TextureInfo def, UnityEngine.Material mat, int texPropertyId, IGltfWritable gltf)
@@ -48,31 +73,36 @@ namespace GLTFast.Export
             }
         }
 
-        public override bool ConvertMaterial(UnityEngine.Material uMaterial, out Schema.Material material, IGltfWritable gltf, ICodeLogger logger)
+        private bool ExportBaseColor(UnityEngine.Material unityMaterial, Schema.Material material, IGltfWritable gltf, ICodeLogger logger)
         {
-            var success = true;
-            material = new Schema.Material
+            bool success = true;
+            var mainTex = unityMaterial.GetTexture(k_MainTex);
+            if (mainTex != null)
             {
-                name = uMaterial.name,
-                pbrMetallicRoughness = new PbrMetallicRoughness
+                if (mainTex is Texture2D)
                 {
-                    metallicFactor = uMaterial.GetFloat(k_metallic),
-                    roughnessFactor = uMaterial.GetFloat(k_roughness),
-                    baseColor = uMaterial.GetColor(k_Color)
+                    material.pbrMetallicRoughness.baseColorTexture = ExportTextureInfo(mainTex, gltf);
+                    material.pbrMetallicRoughness.baseColorTexture.texCoord = (int)unityMaterial.GetFloat(k_BaseColorUVSet);
+                    ExportTextureTransformNoFlip(material.pbrMetallicRoughness.baseColorTexture, unityMaterial, k_MainTex, gltf);
                 }
-            };
-
-            SetAlphaModeAndCutoff(uMaterial, material);
-            material.doubleSided = IsDoubleSided(uMaterial);
-
-            ExportBaseColor(ref uMaterial, ref material, gltf);
-
-
-            if (uMaterial.IsKeywordEnabled(k_KeywordEmission))
-            {
-                if (uMaterial.HasProperty(k_EmissionColor))
+                else
                 {
-                    var emissionColor = uMaterial.GetColor(k_EmissionColor);
+                    logger?.Error(LogCode.TextureInvalidType, "baseColor", material.name);
+                    success = false;
+                }
+                
+            }
+            return success;
+        }
+
+        private bool ExportEmissive(UnityEngine.Material unityMaterial, Schema.Material material, IGltfWritable gltf, ICodeLogger logger)
+        {
+            bool success = true;
+            if (unityMaterial.IsKeywordEnabled(k_KeywordEmission))
+            {
+                if (unityMaterial.HasProperty(k_EmissionColor))
+                {
+                    var emissionColor = unityMaterial.GetColor(k_EmissionColor);
 
                     // Clamp emissionColor to 0..1
                     var maxFactor = math.max(emissionColor.r, math.max(emissionColor.g, emissionColor.b));
@@ -87,16 +117,17 @@ namespace GLTFast.Export
                     material.emissive = emissionColor;
                 }
 
-                if (uMaterial.HasProperty(k_EmissionMap))
+                if (unityMaterial.HasProperty(k_EmissionMap))
                 {
-                    var emissionTex = uMaterial.GetTexture(k_EmissionMap);
+                    var emissionTex = unityMaterial.GetTexture(k_EmissionMap);
 
                     if (emissionTex != null)
                     {
                         if (emissionTex is Texture2D)
                         {
                             material.emissiveTexture = ExportTextureInfo(emissionTex, gltf);
-                            ExportTextureTransform(material.emissiveTexture, uMaterial, k_EmissionMap, gltf);
+                            material.emissiveTexture.texCoord = (int)unityMaterial.GetFloat(k_EmissionUVSet);
+                            ExportTextureTransformNoFlip(material.emissiveTexture, unityMaterial, k_EmissionMap, gltf);
                         }
                         else
                         {
@@ -104,6 +135,85 @@ namespace GLTFast.Export
                             success = false;
                         }
                     }
+                }
+            }
+            return success;
+        }
+
+        private bool ExportNormal(UnityEngine.Material unityMaterial, Schema.Material material, IGltfWritable gltf, ICodeLogger logger)
+        {
+            bool success = true;
+            if (unityMaterial.HasProperty(k_BumpMap)
+                && (unityMaterial.IsKeywordEnabled(Materials.Constants.kwNormalMap)
+                || unityMaterial.IsKeywordEnabled(k_KeywordBumpMap)))
+            {
+                var normalTex = unityMaterial.GetTexture(k_BumpMap);
+
+                if (normalTex != null)
+                {
+                    if (normalTex is Texture2D)
+                    {
+                        material.normalTexture = ExportNormalTextureInfo(normalTex, unityMaterial, gltf);
+                        material.normalTexture.texCoord = (int)unityMaterial.GetFloat(k_BumpMapUVSet);
+                        ExportTextureTransformNoFlip(material.normalTexture, unityMaterial, k_BumpMap, gltf);
+                    }
+                    else
+                    {
+                        logger?.Error(LogCode.TextureInvalidType, "normal", unityMaterial.name);
+                        success = false;
+                    }
+                }
+            }
+            return success;
+        }
+
+        private bool ExportOcclusionRoughnessMetallic(UnityEngine.Material unityMaterial, Schema.Material gltfMaterial, IGltfWritable gltf, ICodeLogger logger)
+        {
+            bool success = true;
+            var metallicRoughnessTex = unityMaterial.GetTexture(k_MetallicGlossMap);
+            if (metallicRoughnessTex != null)
+            {
+                if (metallicRoughnessTex is Texture2D)
+                {
+                    gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture = ExportTextureInfo(metallicRoughnessTex, gltf);
+                    gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.texCoord = (int)unityMaterial.GetFloat(k_MetallicGlossUVSet);
+                    ExportTextureTransformNoFlip(gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture, unityMaterial, k_MetallicGlossMap, gltf);
+                }
+                else
+                {
+                    logger?.Error(LogCode.TextureInvalidType, "metallicRoughness", unityMaterial.name);
+                    success = false;
+                }
+            }
+
+            var occlusionTex = unityMaterial.GetTexture(k_OcclusionMap);
+            if (occlusionTex != null)
+            {
+                if (occlusionTex is Texture2D)
+                {
+                    int occlusionTextureID = -1;
+                    if (occlusionTex == metallicRoughnessTex)
+                    {
+                        occlusionTextureID = gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index;
+                    }
+                    else
+                    {
+                        var imageExport = new ImageExport(occlusionTex as Texture2D);
+                        AddImageExport(gltf, imageExport, out occlusionTextureID);
+                    }
+
+                    gltfMaterial.occlusionTexture = new OcclusionTextureInfo {
+                        index = occlusionTextureID,
+                        strength = unityMaterial.GetFloat(k_OcclusionStrength),
+                        texCoord = (int)unityMaterial.GetFloat(k_OcclusionUVSet)
+                    };
+                    
+                    ExportTextureTransformNoFlip(gltfMaterial.occlusionTexture, unityMaterial, k_OcclusionMap, gltf);
+                }
+                else
+                {
+                    logger?.Error(LogCode.TextureInvalidType, "occlusion", gltfMaterial.name);
+                    success = false;
                 }
             }
 
