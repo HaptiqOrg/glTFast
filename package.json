@@ -1,7 +1,7 @@
 {
-  "name": "com.cloudberrie.gltfast",
-  "version": "4.8.3",
-  "displayName": "glTFast Cloudberrie",
+  "name": "com.atteneder.gltfast",
+  "version": "4.8.2",
+  "displayName": "glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2019.4",
   "keywords": [
@@ -16,9 +16,9 @@
     "basisu"
   ],
   "author": {
-    "name": "Cloudberrie",
-    "email": "sondre.utheim@cloudberrie.io",
-    "url": "https://cloudberrie.io"
+    "name": "Andreas Atteneder",
+    "email": "andreas.atteneder@gmail.com",
+    "url": "https://pixel.engineer"
   },
   "dependencies": {
     "com.unity.modules.jsonserialize": "1.0.0",
