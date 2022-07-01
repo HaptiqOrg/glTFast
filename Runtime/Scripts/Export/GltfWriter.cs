@@ -900,7 +900,7 @@ namespace GLTFast.Export {
                     case VertexAttribute.TexCoord5:
                     case VertexAttribute.TexCoord6:
                     case VertexAttribute.TexCoord7:
-                        FlipUVY(
+                        await FlipUVYAttribute(
                             attrData,
                             (uint)strides[attrData.stream],
                             vertexCount,
@@ -1400,7 +1400,40 @@ namespace GLTFast.Export {
             m_ImageExports = null;
             return true;
         }
-        
+
+        static async Task FlipUVYAttribute(
+            AttributeData attrData,
+            uint byteStride,
+            int vertexCount,
+            NativeArray<byte> inputStream,
+            NativeArray<byte> outputStream
+            )
+        {
+            var job = CreateFlipUVYAttributeJob(attrData, byteStride, vertexCount, inputStream, outputStream);
+            while (!job.IsCompleted)
+            {
+                await Task.Yield();
+            }
+            job.Complete(); // TODO: Wait until thread is finished
+        }
+
+        static unsafe JobHandle CreateFlipUVYAttributeJob(
+            AttributeData attrData,
+            uint byteStride,
+            int vertexCount,
+            NativeArray<byte> inputStream,
+            NativeArray<byte> outputStream
+            )
+        {
+            var job = new ExportJobs.FlipUVYAttributeJob
+            {
+                input = (byte*)inputStream.GetUnsafeReadOnlyPtr() + attrData.offset,
+                byteStride = byteStride,
+                output = (byte*)outputStream.GetUnsafePtr() + attrData.offset
+            }.Schedule(vertexCount, k_DefaultInnerLoopBatchCount);
+            return job;
+        }
+
         static async Task ConvertPositionAttribute(
             AttributeData attrData,
             uint byteStride,
