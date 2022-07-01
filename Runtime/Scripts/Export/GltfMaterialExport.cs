@@ -35,7 +35,7 @@ namespace GLTFast.Export
             var success = true;
             gltfMaterial = new Schema.Material
             {
-                name = unityMaterial.name,
+                name = unityMaterial.name.Replace("(Instance)", ""),
                 pbrMetallicRoughness = new PbrMetallicRoughness
                 {
                     metallicFactor = unityMaterial.GetFloat(k_metallic),
@@ -81,7 +81,7 @@ namespace GLTFast.Export
             {
                 if (mainTex is Texture2D)
                 {
-                    material.pbrMetallicRoughness.baseColorTexture = ExportTextureInfo(mainTex, gltf);
+                    material.pbrMetallicRoughness.baseColorTexture = ExportLinearTextureInfo(mainTex, gltf);
                     material.pbrMetallicRoughness.baseColorTexture.texCoord = (int)unityMaterial.GetFloat(k_BaseColorUVSet);
                     ExportTextureTransformNoFlip(material.pbrMetallicRoughness.baseColorTexture, unityMaterial, k_MainTex, gltf);
                 }
@@ -218,6 +218,63 @@ namespace GLTFast.Export
             }
 
             return success;
+        }
+
+        protected static TextureInfo ExportLinearTextureInfo(
+            UnityEngine.Texture texture,
+            IGltfWritable gltf
+        )
+        {
+            var texture2d = texture as Texture2D;
+            if (texture2d == null)
+            {
+                return null;
+            }
+            var imageExport = new LinearImageExport(texture2d);
+            if (AddImageExport(gltf, imageExport, out var textureId))
+            {
+                var info = new TextureInfo
+                {
+                    index = textureId
+                };
+
+                return info;
+            }
+            return null;
+        }
+
+        public class LinearImageExport : ImageExport
+        {
+
+            static UnityEngine.Material s_LinearBlitMaterial;
+
+            /// <summary>
+            /// Default constructor
+            /// </summary>
+            /// <param name="texture">Main source texture</param>
+            public LinearImageExport(Texture2D texture)
+                : base(texture) { }
+
+            static UnityEngine.Material GetLinearBlitMaterial()
+            {
+                if (s_LinearBlitMaterial == null)
+                {
+                    s_LinearBlitMaterial = LoadBlitMaterial("glTFExportLinear");
+                }
+                return s_LinearBlitMaterial;
+            }
+
+
+            protected override bool GenerateTexture(out byte[] imageData)
+            {
+                if (m_Texture != null)
+                {
+                    imageData = EncodeTexture(m_Texture, format, hasAlpha: false, blitMaterial: GetLinearBlitMaterial());
+                    return true;
+                }
+                imageData = null;
+                return false;
+            }
         }
     }
 }
