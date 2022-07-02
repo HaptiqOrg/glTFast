@@ -175,7 +175,7 @@ namespace GLTFast.Export
             {
                 if (metallicRoughnessTex is Texture2D)
                 {
-                    gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture = ExportTextureInfo(metallicRoughnessTex, gltf);
+                    gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture = ExportLinearTextureInfo(metallicRoughnessTex, gltf);
                     gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.texCoord = (int)unityMaterial.GetFloat(k_MetallicGlossUVSet);
                     ExportTextureTransformNoFlip(gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture, unityMaterial, k_MetallicGlossMap, gltf);
                 }
@@ -191,7 +191,7 @@ namespace GLTFast.Export
             {
                 if (occlusionTex is Texture2D)
                 {
-                    int occlusionTextureID = -1;
+                    int occlusionTextureID;
                     if (occlusionTex == metallicRoughnessTex)
                     {
                         occlusionTextureID = gltfMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index;
