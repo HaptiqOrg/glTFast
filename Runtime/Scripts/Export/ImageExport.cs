@@ -77,13 +77,15 @@ namespace GLTFast.Export {
         /// <inheritdoc />
         public override string fileName {
             get {
+                string nameWithoutExtension;
 #if UNITY_EDITOR
                 if (validAssetPath) {
-                    var nameWithoutExtension = Path.GetFileNameWithoutExtension(m_AssetPath);
+                    nameWithoutExtension = Path.GetFileNameWithoutExtension(m_AssetPath);
                     return $"{nameWithoutExtension}.{fileExtension}";
                 }
 #endif
-                return $"{m_Texture.name}.{fileExtension}";
+                nameWithoutExtension = m_Texture.name.Replace(".png", "").Replace(".jpg", "").Replace(".PNG", "").Replace(".JPG", "");
+                return $"{nameWithoutExtension}.{fileExtension}";
             }
         }
 
