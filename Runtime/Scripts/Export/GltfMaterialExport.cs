@@ -81,7 +81,7 @@ namespace GLTFast.Export
             {
                 if (mainTex is Texture2D)
                 {
-                    material.pbrMetallicRoughness.baseColorTexture = ExportLinearTextureInfo(mainTex, gltf);
+                    material.pbrMetallicRoughness.baseColorTexture = ExportTextureInfo(mainTex, gltf);
                     material.pbrMetallicRoughness.baseColorTexture.texCoord = (int)unityMaterial.GetFloat(k_BaseColorUVSet);
                     ExportTextureTransformNoFlip(material.pbrMetallicRoughness.baseColorTexture, unityMaterial, k_MainTex, gltf);
                 }
