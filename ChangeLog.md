@@ -4,41 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-### Added
-- `settings` parameter to `GameObjectBoundsInstantiator`'s constructor
-- (Import) Support for lights via KHR_lights_punctual extension (#17)
-- (Import) Exclude/include certain features (e.g. camera, animation, lights) via `InstantiationSettings.mask` (of type `ComponentType`)
-- DOTS instantiation settings support
-- (Import) Additional load methods in `GltfImport` (#409)
-  - `Load` override to load from a `byte[]`
-  - `LoadFile` to load from local files
-  - `LoadGltfJson` to load a glTF JSON from string
-- (Import) `sceneObjectCreation` instantiation setting. It controls whether/when a GameObject/Entity should be created for the scene. Options: `Always`, `Never`, `WhenSingleRootNode`. (#320)
-- (Import) Design-time import inspector now offers many more settings (feature parity with run-time settings)
+## [4.8.4] - 2022-08-26
 ### Changed
-- Converted a lot of unintentionally public classes, types and properties to internal ones
-- Replaced `CollectingLogger.item` with `.Count` and `.Items` iterator
-- Moved logging related code into `GLTFast.Logging` namespace
-- Renamed `Schema.RootChild` to `Schema.NamedObject` and made it abstract
-- Converted  `GameObjectInstantiator.Settings` to `InstantiationSettings`
-- Removed `RenderPipelineUtils.DetectRenderPipeline` in favor of `RenderPipelineUtils.renderPipeline`
-- Additional methods/properties (e.g. from class `GameObjectInstantiator`) are virtual, so they can be overriden
-- `GltfImport` implements `IDisposable` now (#194)
-- Support for PNG/Jpeg textures (via built-in packages *Unity Web Request Texture* and *Image Conversion*) is now optional (#321)
-- Root entity created by `GltfEntityAsset` will inherit its GameObject's name, position, rotation and scale (at instantiation time)
-### Removed
-- Obsolete code
-  - `GltfImport.Destroy` (was renamed to `GltfImport.Dispose`)
-  - `GLTFast.GltFast` (was renamed to `GltfImport`)
-  - `GltfImport.InstantiateGltf` (was replaced by `InstantiateMainScene` and `InstantiateScene`)
-  - `GltfImport.Destroy` (was renamed to `Dispose`)
-  - Remains of Basis Universal extension draft state
-    - `Schema.Image.extensions`
-    - `Schema.Image.ImageExtension`
-    - `Schema.Image.ImageKtx2`
+- (Import) Double-sided GI is enabled on all materials for Editor imports (#452)
 ### Fixed
-- Shader graphs' BaseColor, BaseColorTexture and vertex color calculations are now in correct color space
+- Diffuse texture transform on specular glossiness materials (#454)
+- Corrected pointer math in accessor conversions
+  - Int16 texture coordinates
+  - Normalized Int16 texture coordinates (#439)
+  - Normalized Int16 tangents
+
+## [4.8.3] - 2022-06-04
+### Fixed
+- Loading glTFs with nothing but accessors/bufferViews/buffers (#422)
+- Loading glTFs with invalid embed buffers (#422)
+- Corrected unsigned short joint weights import (#419)
 
 ## [4.8.2] - 2022-06-15
 ### Changed
