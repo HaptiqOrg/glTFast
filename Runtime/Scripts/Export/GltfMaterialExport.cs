@@ -16,6 +16,8 @@ namespace GLTFast.Export
         const string k_KeywordBumpMap = "_BUMPMAP";
 
         static readonly int k_BumpMap = Shader.PropertyToID("_BumpMap");
+        static readonly int k_BaseMap = Shader.PropertyToID("_BaseMap");
+        static readonly int k_ColorTexture = Shader.PropertyToID("_ColorTexture");
         static readonly int k_roughness = Shader.PropertyToID("_Roughness");
         static readonly int k_metallic = Shader.PropertyToID("_Metallic");
         static readonly int k_EmissionColor = Shader.PropertyToID("_EmissionColor");
@@ -38,24 +40,78 @@ namespace GLTFast.Export
                 name = unityMaterial.name.Replace("(Instance)", ""),
                 pbrMetallicRoughness = new PbrMetallicRoughness
                 {
-                    metallicFactor = unityMaterial.GetFloat(k_metallic),
-                    roughnessFactor = unityMaterial.GetFloat(k_roughness),
-                    baseColor = unityMaterial.GetColor(k_Color)
+                    metallicFactor = 0.0f, 
+                    roughnessFactor = 1.0f
                 }
             };
 
             SetAlphaModeAndCutoff(unityMaterial, gltfMaterial);
             gltfMaterial.doubleSided = IsDoubleSided(unityMaterial);
 
-            success &= ExportBaseColor(unityMaterial, gltfMaterial, gltf, logger);
             success &= ExportEmissive(unityMaterial, gltfMaterial, gltf, logger);
-            success &= ExportNormal(unityMaterial, gltfMaterial, gltf, logger);
-            success &= ExportOcclusionRoughnessMetallic(unityMaterial, gltfMaterial, gltf, logger);
 
+            var mainTexProperty = k_MainTex;
+            if (unityMaterial.HasProperty(k_BaseMap))
+            {
+                mainTexProperty = k_BaseMap;
+            }
+            else if (unityMaterial.HasProperty(k_ColorTexture))
+            {
+                mainTexProperty = k_ColorTexture;
+            }
+
+            if (IsUnlit(unityMaterial)) {
+                ExportUnlit(gltfMaterial, unityMaterial, mainTexProperty, gltf, logger);
+            }
+            else
+            {
+                gltfMaterial.pbrMetallicRoughness.metallicFactor = unityMaterial.GetFloat(k_metallic);
+                gltfMaterial.pbrMetallicRoughness.roughnessFactor = unityMaterial.GetFloat(k_roughness);
+                gltfMaterial.pbrMetallicRoughness.baseColor = unityMaterial.GetColor(k_Color);
+
+                success &= ExportBaseColor(unityMaterial, gltfMaterial, gltf, logger);
+                success &= ExportNormal(unityMaterial, gltfMaterial, gltf, logger);
+                success &= ExportOcclusionRoughnessMetallic(unityMaterial, gltfMaterial, gltf, logger);
+            }
 
             return success;
         }
 
+        protected static void ExportUnlit(
+            Material material,
+            UnityEngine.Material uMaterial,
+            int mainTexProperty,
+            IGltfWritable gltf,
+            ICodeLogger logger
+            )
+        {
+
+            gltf.RegisterExtensionUsage(Extension.MaterialsUnlit);
+            material.extensions = material.extensions ?? new MaterialExtension();
+            material.extensions.KHR_materials_unlit = new MaterialUnlit();
+	        
+            var pbr = material.pbrMetallicRoughness ?? new PbrMetallicRoughness();
+
+            if (uMaterial.HasProperty(k_Color)) {
+                pbr.baseColor = uMaterial.GetColor(k_Color);
+            }
+
+            if (uMaterial.HasProperty(mainTexProperty)) {
+                var mainTex = uMaterial.GetTexture(mainTexProperty);
+                if (mainTex != null) {
+                    if(mainTex is Texture2D) {
+                        pbr.baseColorTexture = ExportTextureInfo(mainTex, gltf);
+                        if (pbr.baseColorTexture != null) {
+                            ExportTextureTransformNoFlip(pbr.baseColorTexture, uMaterial, mainTexProperty, gltf);
+                        }
+                    } else {
+                        logger?.Error(LogCode.TextureInvalidType, "main", material.name );
+                    }
+                }
+            }
+
+            material.pbrMetallicRoughness = pbr;
+        }
         protected static void ExportTextureTransformNoFlip(TextureInfo def, UnityEngine.Material mat, int texPropertyId, IGltfWritable gltf)
         {
             var offset = mat.GetTextureOffset(texPropertyId);
