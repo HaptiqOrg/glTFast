@@ -61,7 +61,7 @@ namespace GLTFast.Export
             }
 
             if (IsUnlit(unityMaterial)) {
-                ExportUnlit(gltfMaterial, unityMaterial, mainTexProperty, gltf, logger);
+                ExportUnlitNoFlip(gltfMaterial, unityMaterial, mainTexProperty, gltf, logger);
             }
             else
             {
@@ -77,7 +77,7 @@ namespace GLTFast.Export
             return success;
         }
 
-        protected static void ExportUnlit(
+        protected static void ExportUnlitNoFlip(
             Material material,
             UnityEngine.Material uMaterial,
             int mainTexProperty,
