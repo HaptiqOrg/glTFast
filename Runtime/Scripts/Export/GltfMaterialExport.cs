@@ -67,7 +67,7 @@ namespace GLTFast.Export
             {
                 gltfMaterial.pbrMetallicRoughness.metallicFactor = unityMaterial.GetFloat(k_metallic);
                 gltfMaterial.pbrMetallicRoughness.roughnessFactor = unityMaterial.GetFloat(k_roughness);
-                gltfMaterial.pbrMetallicRoughness.baseColor = unityMaterial.GetColor(k_Color);
+                gltfMaterial.pbrMetallicRoughness.baseColor = unityMaterial.GetColor(k_Color).linear;
 
                 success &= ExportBaseColor(unityMaterial, gltfMaterial, gltf, logger);
                 success &= ExportNormal(unityMaterial, gltfMaterial, gltf, logger);
@@ -93,7 +93,7 @@ namespace GLTFast.Export
             var pbr = material.pbrMetallicRoughness ?? new PbrMetallicRoughness();
 
             if (uMaterial.HasProperty(k_Color)) {
-                pbr.baseColor = uMaterial.GetColor(k_Color);
+                pbr.baseColor = uMaterial.GetColor(k_Color).linear;
             }
 
             if (uMaterial.HasProperty(mainTexProperty)) {
@@ -170,7 +170,7 @@ namespace GLTFast.Export
                         // TODO: use maxFactor as emissiveStrength (KHR_materials_emissive_strength)
                     }
 
-                    material.emissive = emissionColor;
+                    material.emissive = emissionColor.linear;
                 }
 
                 if (unityMaterial.HasProperty(k_EmissionMap))
