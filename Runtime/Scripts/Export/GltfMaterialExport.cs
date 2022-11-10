@@ -66,7 +66,16 @@ namespace GLTFast.Export
             else
             {
                 gltfMaterial.pbrMetallicRoughness.metallicFactor = unityMaterial.GetFloat(k_metallic);
-                gltfMaterial.pbrMetallicRoughness.roughnessFactor = unityMaterial.GetFloat(k_roughness);
+
+                if (unityMaterial.HasProperty("k_roughness"))
+                {
+                    gltfMaterial.pbrMetallicRoughness.roughnessFactor = unityMaterial.GetFloat(k_roughness);
+                }
+                else
+                {
+                    gltfMaterial.pbrMetallicRoughness.roughnessFactor = 1;
+                }
+                
                 gltfMaterial.pbrMetallicRoughness.baseColor = unityMaterial.GetColor(k_Color).linear;
 
                 success &= ExportBaseColor(unityMaterial, gltfMaterial, gltf, logger);
