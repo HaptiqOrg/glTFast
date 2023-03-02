@@ -480,23 +480,37 @@ namespace GLTFast {
 #endif // UNITY_ANIMATION
             ) {
             GameObject sceneGameObject;
-            if (settings.sceneObjectCreation == InstantiationSettings.SceneObjectCreation.Never
-                || settings.sceneObjectCreation == InstantiationSettings.SceneObjectCreation.WhenMultipleRootNodes && nodeIndices.Length == 1) {
-                sceneGameObject = parent.gameObject;
-            }
-            else {
-                sceneGameObject = new GameObject(name ?? "Scene");
-                sceneGameObject.transform.SetParent( parent, false);
-                sceneGameObject.layer = settings.layer;
-            }
-            
-            if (nodeIndices != null) {
-                foreach(var nodeIndex in nodeIndices) {
-                    if (nodes[nodeIndex] != null) {
-                        nodes[nodeIndex].transform.SetParent( sceneGameObject.transform, false );
-                    }
-                }
-            }
+            if (nodeIndices != null)
+            {
+				if (settings.sceneObjectCreation == InstantiationSettings.SceneObjectCreation.Never
+			   || settings.sceneObjectCreation == InstantiationSettings.SceneObjectCreation.WhenMultipleRootNodes && nodeIndices.Length == 1)
+				{
+					sceneGameObject = parent.gameObject;
+				}
+				else
+				{
+					sceneGameObject = new GameObject(name ?? "Scene");
+					sceneGameObject.transform.SetParent(parent, false);
+					sceneGameObject.layer = settings.layer;
+				}
+
+				if (nodeIndices != null)
+				{
+					foreach (var nodeIndex in nodeIndices)
+					{
+						if (nodes[nodeIndex] != null)
+						{
+							nodes[nodeIndex].transform.SetParent(sceneGameObject.transform, false);
+						}
+					}
+				}
+			}
+            else
+            {
+				sceneGameObject = new GameObject(name ?? "Scene");
+				sceneGameObject.transform.SetParent(parent, false);
+				sceneGameObject.layer = settings.layer;
+			}
 
 #if UNITY_ANIMATION
             if ((settings.mask & ComponentType.Animation) != 0 && animationClips != null) {
