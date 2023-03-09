@@ -17,7 +17,7 @@ using UnityEngine;
 
 namespace GLTFast.Export {
     static class Constants {
-        public const string version = "4.8.5-cloudberrie";
+        public const string version = "4.8.8-cloudberrie";
         
         internal const string mimeTypePNG = "image/png";
         internal const string mimeTypeJPG = "image/jpeg";
