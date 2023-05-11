@@ -67,7 +67,7 @@ namespace GLTFast.Export
             {
                 gltfMaterial.pbrMetallicRoughness.metallicFactor = unityMaterial.GetFloat(k_metallic);
 
-                if (unityMaterial.HasProperty("k_roughness"))
+                if (unityMaterial.HasProperty(k_roughness))
                 {
                     gltfMaterial.pbrMetallicRoughness.roughnessFactor = unityMaterial.GetFloat(k_roughness);
                 }
