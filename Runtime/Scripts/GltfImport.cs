@@ -459,8 +459,9 @@ namespace GLTFast {
             if (!loadingDone || loadingError) return false;
             // According to glTF specification, loading nothing is
             // the correct behavior
-            if (gltfRoot.scene < 0) return true;
-            return InstantiateScene(instantiator, gltfRoot.scene);
+            if (gltfRoot.scenes.Length <= 0) return true;
+			int sceneIndex = gltfRoot.scene >= 0 ? gltfRoot.scene : 0;
+			return InstantiateScene(instantiator, sceneIndex);
         }
 
         /// <summary>
