@@ -82,7 +82,7 @@ namespace GLTFast.Export {
                 var outPtr = (float2*)(output + i * byteStride);
 
                 var tmp = *inPtr;
-                tmp.y *= -1;
+                tmp.y = 1 - tmp.y;
                 *outPtr = tmp;
             }
         }
